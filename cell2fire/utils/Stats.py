@@ -165,7 +165,7 @@ class Statistics(object):
         plt.title(title)
 
         #sns.set(style="darkgrid", font_scale=1.5)
-        ax = sns.boxplot(x=xx, y=yy, hue=xx, data=Data, linewidth=2.5, palette=pal, legend=False).set(xlabel=xlab, ylabel=ylab)
+        ax = sns.boxplot(x=xx, y=yy, hue=xx, data=Data, linewidth=2.5, palette=pal).set(xlabel=xlab, ylabel=ylab)
         if swarm:
             ax = sns.swarmplot(x=xx, y=yy, data=Data, linewidth=2.5, palette=pal).set(xlabel=xlab,ylabel=ylab)   
 
