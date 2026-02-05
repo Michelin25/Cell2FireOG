@@ -21,7 +21,7 @@ setup(name='Cell2Fire',
       author_email='dlwoodruff@ucdavis.edu',
       packages=packages,
       package_dir={'': '.'},
-      install_requires=['numpy', 'pandas', 'matplotlib', 'seaborn', 'tqdm', 'opencv-python', 'networkx', 'deap'],
+      install_requires=['numpy', 'pandas', 'matplotlib', 'seaborn', 'tqdm', 'opencv-python', 'networkx', 'deap', 'scipy'],
       extras_require={
         'doc': [
             'sphinx_rtd_theme',
