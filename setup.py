@@ -20,6 +20,7 @@ setup(name='Cell2Fire',
       author='Cristobal Pais, Jaime Carrasco, David Martell, David L. Woodruff, Andres Weintraub',
       author_email='dlwoodruff@ucdavis.edu',
       packages=packages,
+      package_dir={'': '.'},
       install_requires=['numpy', 'pandas', 'matplotlib', 'seaborn', 'tqdm', 'opencv-python', 'networkx', 'deap'],
       extras_require={
         'doc': [
