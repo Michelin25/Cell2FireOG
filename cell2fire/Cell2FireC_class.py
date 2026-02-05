@@ -16,10 +16,42 @@ from cell2fire.utils.ParseInputs import InitCells
 from cell2fire.utils.Stats import *
 from cell2fire.utils.Heuristics import *
 import cell2fire  # for path finding
-p = str(cell2fire.__path__)
-l = p.find("'")
-r = p.find("'", l+1)
-cell2fire_path = p[l+1:r]
+cell2fire_path = os.path.dirname(cell2fire.__file__)
+
+
+
+def _core_binary_path():
+    return os.path.join(cell2fire_path, 'Cell2FireC', 'Cell2Fire')
+
+
+def _ensure_core_binary_exists():
+    core_bin = _core_binary_path()
+    if os.path.isfile(core_bin):
+        return core_bin
+
+    build_dir = os.path.join(cell2fire_path, 'Cell2FireC')
+    if shutil.which('make') is None:
+        raise RuntimeError(
+            f"Cell2Fire core executable not found at {core_bin}. "
+            "Install make and build it manually with: "
+            f"cd {build_dir} && make"
+        )
+
+    try:
+        subprocess.check_call(['make'], cwd=build_dir)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            "Failed to build the Cell2Fire C++ core automatically. "
+            f"Run manually: cd {build_dir} && make"
+        ) from exc
+
+    if not os.path.isfile(core_bin):
+        raise RuntimeError(
+            f"Build completed but executable is still missing at {core_bin}. "
+            "Please inspect the Makefile/toolchain on this system."
+        )
+
+    return core_bin
 
 class Cell2FireC:
     # Constructor and initial run
@@ -55,7 +87,8 @@ class Cell2FireC:
     def run(self):
         # Parse args for calling C++ via subprocess        
         # old: execArray=[os.path.join(os.getcwd(),'Cell2FireC/Cell2Fire'), 
-        execArray=[os.path.join(cell2fire_path,'Cell2FireC/Cell2Fire'), 
+        core_bin = _ensure_core_binary_exists()
+        execArray=[core_bin, 
                    '--input-instance-folder', self.args.InFolder,
                    '--output-folder', self.args.OutFolder if (self.args.OutFolder is not None) else '',
                    '--ignitions' if (self.args.ignitions) else '',
@@ -98,7 +131,8 @@ class Cell2FireC:
     # Run C++ Sim with heuristic treatment 
     def run_Heur(self, OutFolder, HarvestPlanFile):
         # Parse args for calling C++ via subprocess        
-        execArray=[os.path.join(cell2fire_path,'Cell2FireC/Cell2Fire'), 
+        core_bin = _ensure_core_binary_exists()
+        execArray=[core_bin, 
                    '--input-instance-folder', self.args.InFolder,
                    '--output-folder', OutFolder if (OutFolder is not None) else '',
                    '--ignitions' if (self.args.ignitions) else '',
