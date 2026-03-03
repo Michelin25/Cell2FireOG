@@ -1,10 +1,14 @@
-"""Cell2Fire package initialization."""
+"""Compatibility package exposing the historical `Cell2Fire` import path."""
 
-from importlib.metadata import PackageNotFoundError, version
+from importlib import import_module
+import sys
 
-try:
-    __version__ = version("Cell2Fire")
-except PackageNotFoundError:  # pragma: no cover - fallback for editable/dev installs
-    __version__ = "0.0.0"
+_pkg = import_module("cell2fire")
 
-__all__ = ["__version__"]
+# Re-export symbols and share package search path so submodules resolve:
+# e.g. `from Cell2Fire.utils.ParseInputs import ParseInputs`.
+globals().update(_pkg.__dict__)
+__path__ = _pkg.__path__
+
+# Ensure both names reference the same loaded package instance.
+sys.modules[__name__] = _pkg
