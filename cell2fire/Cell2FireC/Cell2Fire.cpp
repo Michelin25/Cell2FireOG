@@ -253,7 +253,10 @@ Cell2Fire::Cell2Fire(arguments _args) : CSVWeather(_args.InFolder + "Weather.csv
 	this->CSVWeather.parseWeatherDF(wdf_ptr, this->WeatherDF, WPeriods);
 	//DEBUGthis->CSVWeather.printData(this->WeatherDF);
 	
-	/*  Ignitions */
+	/*  Ignitions
+	 *  - To force ignition location per year: enable --ignitions and edit <InFolder>/Ignitions.csv
+	 *  - To randomize ignition location per year: do not pass --ignitions
+	 */
 	int IgnitionYears;
 	std::vector<int> IgnitionPoints;   
 	
@@ -277,14 +280,14 @@ Cell2Fire::Cell2Fire(arguments _args) : CSVWeather(_args.InFolder + "Weather.csv
 		args.TotalYears = std::min(args.TotalYears, IgnitionYears);
 		//DEBUGstd::cout << "Setting TotalYears to " << args.TotalYears << " for consistency with Ignitions file" << std::endl;
 		
-		// Ignition points 
+		// Ignition points loaded from Ignitions.csv (year -> cell id) 
 		this->IgnitionPoints = std::vector<int>(IgnitionYears, 0);
 		CSVIgnitions.parseIgnitionDF(this->IgnitionPoints, IgnitionsDF, IgnitionYears);
 		//this->IgnitionSets = std::vector<unordered_set<int>>(this->IgnitionPoints.size());
 		this->IgnitionSets = std::vector<std::vector<int>>(this->args.TotalYears);
 		
 		
-		// Ignition radius
+		// Ignition radius (IgnitionRad): expands each yearly ignition cell to a candidate neighborhood
 		if (this->args.IgnitionRadius > 0){
 			// Aux
 			int i, a, igVal;
@@ -577,7 +580,7 @@ bool Cell2Fire::RunIgnition(std::default_random_engine generator){
 	std::unordered_map<int, CellsFBP>::iterator it;
 	std::uniform_int_distribution<int> distribution(1, this->nCells);
 	
-	// No Ignitions provided
+	// No Ignitions.csv mode: ignition cell is sampled uniformly at random each year.
 	if (this->args.Ignitions == 0) { 
 		while (true) {
 			// Pick any cell (uniform distribution [a,b])
@@ -629,11 +632,11 @@ bool Cell2Fire::RunIgnition(std::default_random_engine generator){
 		}
 	} 
 
-	// Ignitions with provided points from CSV
+	// Ignitions.csv mode: start from yearly fixed cell and optionally randomize within IgnitionRadius
 	else {
 		int temp = IgnitionPoints[this->year-1];
 		
-		// If ignition Radius != 0, sample from the Radius set
+		// If IgnitionRadius > 0, sample a random candidate from the precomputed neighborhood set
 		if (this->args.IgnitionRadius > 0){
 			// Pick any at random and set temp with that cell
 			std::uniform_int_distribution<int> udistribution(0, this->IgnitionSets[this->year - 1].size()-1);
