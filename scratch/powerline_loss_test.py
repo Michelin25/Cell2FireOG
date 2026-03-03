@@ -35,6 +35,10 @@ OUTPUT_FOLDER = REPO_ROOT / "outputs" / "PowerLine100x100"
 CORE_BINARY = REPO_ROOT / "cell2fire" / "Cell2FireC" / "Cell2Fire"
 WEATHER_MODE = "rows"
 NWEATHERS = 1
+
+# === Experiment knobs (edit these first) ===
+# True  -> pass --ignitions and read year->cell ignition mapping from Ignitions.csv
+# False -> do not pass --ignitions, so C++ picks random ignition locations
 USE_PREDEFINED_IGNITIONS = False  # True => read yearly ignition cell(s) from GENERATED_DATA_FOLDER/Ignitions.csv
 
 
@@ -56,7 +60,9 @@ def copy_common_input_files() -> None:
     ]
 
     # Optional: copy fixed ignitions.
-    # If this is enabled and sim_years=1, all simulations use the same ignition.
+    # Important: this only copies the file. The core will actually use it only if
+    # USE_PREDEFINED_IGNITIONS=True (which appends --ignitions in run_cell2fire_core).
+    # If sim_years=1, all simulations reference year 1 from Ignitions.csv.
     if USE_PREDEFINED_IGNITIONS:
         files_to_copy.append("Ignitions.csv")
 
@@ -183,6 +189,8 @@ def run_cell2fire_core(nsims: int = 20, sim_years: int = 1) -> None:
         shutil.rmtree(OUTPUT_FOLDER)
     OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 
+    # Build CLI args as a plain list so subprocess can run without shell parsing.
+    # This is easier to debug than a single command string.
     cmd = [
         str(CORE_BINARY),
         "--input-instance-folder", as_c2f_folder_arg(GENERATED_DATA_FOLDER),
@@ -230,7 +238,11 @@ def get_last_forest_grid_for_sim(sim_index: int) -> Path:
 
 
 def load_final_grids(nsims: int = 20) -> list[np.ndarray]:
-    """Load final burn grids (0/1) for all simulations."""
+    """Load final burn grids (0/1) for all simulations.
+
+    Each final grid is a 2D numpy array with one value per cell.
+    Convention used here: 1 means burned, other values mean not burned.
+    """
     final_grids: list[np.ndarray] = []
 
     for sim in range(1, nsims + 1):
@@ -280,7 +292,11 @@ def plot_burn_probability_map(burn_prob: np.ndarray, output_png: Path) -> None:
 
 
 def evaluate_losses(values: np.ndarray, final_grids: list[np.ndarray]) -> None:
-    """Calculate hit frequency and loss on power-line cells."""
+    """Calculate hit frequency and loss on power-line cells.
+
+    `values` stores economic weight per cell (power-line column has high value).
+    For each simulation, we sum values only on burned power-line cells.
+    """
     nrows, ncols = values.shape
     powerline_col_index = (ncols // 2) - 1
     powerline_values = values[:, powerline_col_index]
@@ -289,6 +305,7 @@ def evaluate_losses(values: np.ndarray, final_grids: list[np.ndarray]) -> None:
     losses = []
 
     for final_grid in final_grids:
+        # Boolean mask over rows in the power-line column.
         burned_powerline = final_grid[:, powerline_col_index] == 1
         loss_this_sim = float(np.sum(powerline_values[burned_powerline]))
         losses.append(loss_this_sim)
@@ -311,7 +328,15 @@ def evaluate_losses(values: np.ndarray, final_grids: list[np.ndarray]) -> None:
 
 
 def main() -> None:
-    """Create dataset, run Cell2Fire core, summarize losses, and plot burn probability."""
+    """Create dataset, run Cell2Fire core, summarize losses, and plot burn probability.
+
+    High-level flow:
+    1) Build synthetic inputs in data/PowerLine100x100
+    2) Run the C++ core executable
+    3) Read final grids and compute loss statistics
+    4) Save a burn-probability PNG
+    """
+    # You can change scenario size/replications here.
     nrows = 100
     ncols = 100
     nsims = 20
