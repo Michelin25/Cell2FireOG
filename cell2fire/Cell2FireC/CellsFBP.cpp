@@ -382,6 +382,8 @@ std::vector<int> CellsFBP::manageFire(int period, std::unordered_set<int> & Avai
 		cartesianAngle += 360;
 	} 
 	 
+    // ROSCV controls stochastic spread variation.
+    // ROSRV is a standard-normal random draw passed from the simulation loop.
     double ROSRV = 0;
     if (args->ROSCV > 0) {
 	    //std::srand(args->seed);
@@ -401,6 +403,8 @@ std::vector<int> CellsFBP::manageFire(int period, std::unordered_set<int> & Avai
     }
 
 	// If cell cannot send (thresholds), then it will be burned out in the main loop
+    // Key formula: scaled ROS = (1 + ROSCV * ROSRV) * deterministic FBP ROS.
+    // Increase --ROS-CV to increase variability around the deterministic ROS.
     double HROS = (1 + args->ROSCV * ROSRV) * headstruct.ros * args->HFactor;
     	
 	// Extra debug step for sanity checks

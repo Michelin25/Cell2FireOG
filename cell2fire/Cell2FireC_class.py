@@ -91,6 +91,10 @@ class Cell2FireC:
         execArray=[core_bin, 
                    '--input-instance-folder', self.args.InFolder,
                    '--output-folder', self.args.OutFolder if (self.args.OutFolder is not None) else '',
+                   # IGNITION LOCATION CONTROL:
+                   # --ignitions ON  => read fixed yearly ignition locations from <InFolder>/Ignitions.csv
+                   #                     (edit that file to choose the exact ignition cells per year)
+                   # --ignitions OFF => C++ core samples ignition cell uniformly at random each year
                    '--ignitions' if (self.args.ignitions) else '',
                    '--sim-years', str(self.args.sim_years),
                    '--nsims', str(self.args.nsims),
@@ -99,7 +103,10 @@ class Cell2FireC:
                    '--output-messages' if (self.args.OutMessages) else '',
                    '--weather', self.args.WeatherOpt,
                    '--nweathers', str(self.args.nweathers),
+                   # ROS VARIABILITY CONTROL: main stochastic spread knob (0.0 = deterministic ROS, >0 adds variability)
                    '--ROS-CV', str(self.args.ROS_CV),
+                   # If --ignitions is enabled, expands each CSV ignition cell to a radius neighborhood
+                   # and samples one cell from that neighborhood each simulation.
                    '--IgnitionRad', str(self.args.IgRadius), 
                    '--seed', str(int(self.args.seed)),
                    '--ROS-Threshold', str(self.args.ROS_Threshold),
@@ -135,6 +142,7 @@ class Cell2FireC:
         execArray=[core_bin, 
                    '--input-instance-folder', self.args.InFolder,
                    '--output-folder', OutFolder if (OutFolder is not None) else '',
+                   # Same ignition control as in run(): fixed CSV points when enabled, random ignition otherwise.
                    '--ignitions' if (self.args.ignitions) else '',
                    '--sim-years', str(self.args.sim_years),
                    '--nsims', str(self.args.nsims),
@@ -143,6 +151,7 @@ class Cell2FireC:
                    '--output-messages' if (self.args.OutMessages) else '',
                    '--weather', self.args.WeatherOpt,
                    '--nweathers', str(self.args.nweathers),
+                   # Same ROS variability controls as in run().
                    '--ROS-CV', str(self.args.ROS_CV),
                    '--IgnitionRad', str(self.args.IgRadius), 
                    '--seed', str(int(self.args.seed)),

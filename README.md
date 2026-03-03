@@ -68,6 +68,21 @@ For the full list of arguments and their explanation use:
 $ python main.py -h
 ```
 
+For ignition and ROS variability controls:
+- `--ROS-CV`: controls stochastic spread-rate variability (`0.0` = deterministic ROS).
+- `--ignitions`: reads fixed ignition locations from `Ignitions.csv` in the input folder.
+- `--IgnitionRad`: if `--ignitions` is active, samples around each fixed ignition cell.
+  - `0` => exact CSV cell.
+  - `>0` => random cell inside the radius neighborhood.
+
+`Ignitions.csv` is where you directly change ignition location per year (cell IDs):
+```
+year,cell
+1,930
+2,280
+```
+
+
 In addition, both the C++ core and Python scripts can be used separately:
 ## C ++
 Only simulation and generate evolution grids (no stats or plots).
