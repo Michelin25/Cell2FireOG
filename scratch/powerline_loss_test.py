@@ -35,7 +35,7 @@ OUTPUT_FOLDER = REPO_ROOT / "outputs" / "PowerLine100x100"
 CORE_BINARY = REPO_ROOT / "cell2fire" / "Cell2FireC" / "Cell2Fire"
 WEATHER_MODE = "rows"
 NWEATHERS = 1
-USE_PREDEFINED_IGNITIONS = False
+USE_PREDEFINED_IGNITIONS = False  # True => read yearly ignition cell(s) from GENERATED_DATA_FOLDER/Ignitions.csv
 
 
 def as_c2f_folder_arg(folder: Path) -> str:
@@ -169,7 +169,16 @@ def print_logfile_tail(logfile: Path, max_lines: int = 60) -> None:
 
 
 def run_cell2fire_core(nsims: int = 20, sim_years: int = 1) -> None:
-    """Run Cell2Fire C++ core directly (HPC-friendly path)."""
+    """Run Cell2Fire C++ core directly (HPC-friendly path).
+
+    Quick tuning knobs for this experiment:
+    - ROS variability: change the value passed to --ROS-CV in `cmd` below.
+      * 0.0 => deterministic ROS
+      * >0  => stochastic ROS scaling in the C++ core
+    - Ignition location mode: toggle USE_PREDEFINED_IGNITIONS (module constant).
+      * False => random ignition location per simulation/year
+      * True  => fixed ignition location(s) from Ignitions.csv (optionally with --IgnitionRad)
+    """
     if OUTPUT_FOLDER.exists():
         shutil.rmtree(OUTPUT_FOLDER)
     OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -186,7 +195,10 @@ def run_cell2fire_core(nsims: int = 20, sim_years: int = 1) -> None:
         "--output-messages",
         "--weather", WEATHER_MODE,
         "--nweathers", str(NWEATHERS),
+        # CHANGE HERE for ROS spread variability between runs (CV of ROS).
         "--ROS-CV", "0.0",
+        # CHANGE HERE only when USE_PREDEFINED_IGNITIONS=True:
+        # 0 => exact cell from Ignitions.csv, >0 => sample around that cell radius.
         "--IgnitionRad", "0",
         "--seed", "123",
         "--ROS-Threshold", "0",
@@ -194,6 +206,9 @@ def run_cell2fire_core(nsims: int = 20, sim_years: int = 1) -> None:
     ]
 
     if USE_PREDEFINED_IGNITIONS:
+        # IGNITION LOCATION CONTROL:
+        # with --ignitions, core reads GENERATED_DATA_FOLDER/Ignitions.csv to pick yearly ignition cell(s).
+        # without it, ignition location is sampled randomly by the core.
         cmd.append("--ignitions")
 
     logfile = OUTPUT_FOLDER / "LogFile.txt"
